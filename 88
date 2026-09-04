@@ -1,0 +1,153 @@
+--[[
+    无CD技能悬浮窗 v5.0 - 移动端版
+    适用于 Roblox 手机版
+    技能: Shokcer Army - Dash
+]]
+
+-- 防止重复加载
+if game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("NoCooldownGUI") then
+    game:GetService("Players").LocalPlayer.PlayerGui.NoCooldownGUI:Destroy()
+end
+
+-- 服务获取
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ==================== 配置 ====================
+local CONFIG = {
+    TOOL_NAME = "Shokcer Army",  -- 工具名称
+    REMOTE_NAME = "Remote",       -- 远程事件名称
+    SKILL_ARGUMENT = "Dash",      -- 技能参数
+}
+-- ==============================================
+
+-- 检测是否移动端
+local isMobile = UserInputService.TouchEnabled
+
+-- 创建GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NoCooldownGUI"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
+
+-- ==================== 移动端UI ====================
+-- 主框架（移动端优化尺寸）
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 250, 0, 200)
+mainFrame.Position = UDim2.new(0.5, -125, 0.7, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 15)
+mainCorner.Parent = mainFrame
+
+-- 标题栏
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 45)
+titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 15)
+titleCorner.Parent = titleBar
+
+-- 标题
+local titleText = Instance.new("TextLabel")
+titleText.Text = "⚡ 无CD控制"
+titleText.Size = UDim2.new(0.6, 0, 1, 0)
+titleText.Position = UDim2.new(0.05, 0, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.TextColor3 = Color3.fromRGB(255, 200, 0)
+titleText.Font = Enum.Font.GothamBold
+titleText.TextSize = 18
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
+
+-- 最小化按钮（移动端更大）
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 40, 0, 40)
+minimizeButton.Position = UDim2.new(1, -45, 0, 3)
+minimizeButton.Text = "─"
+minimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.TextSize = 20
+minimizeButton.BorderSizePixel = 0
+minimizeButton.Parent = titleBar
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 8)
+minCorner.Parent = minimizeButton
+
+-- 无CD开关按钮（移动端大按钮）
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0.85, 0, 0, 55)
+toggleButton.Position = UDim2.new(0.075, 0, 0.28, 0)
+toggleButton.Text = "无CD: 关闭"
+toggleButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextSize = 18
+toggleButton.BorderSizePixel = 0
+toggleButton.Parent = mainFrame
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 10)
+toggleCorner.Parent = toggleButton
+
+-- 手动触发按钮（移动端专用）
+local fireButton = Instance.new("TextButton")
+fireButton.Size = UDim2.new(0.85, 0, 0, 40)
+fireButton.Position = UDim2.new(0.075, 0, 0.58, 0)
+fireButton.Text = "⚡ 触发技能"
+fireButton.BackgroundColor3 = Color3.fromRGB(50, 100, 180)
+fireButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+fireButton.Font = Enum.Font.GothamBold
+fireButton.TextSize = 16
+fireButton.BorderSizePixel = 0
+fireButton.Visible = false  -- 默认隐藏，开启无CD后显示
+fireButton.Parent = mainFrame
+
+local fireCorner = Instance.new("UICorner")
+fireCorner.CornerRadius = UDim.new(0, 10)
+fireCorner.Parent = fireButton
+
+-- 状态显示
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, 0, 0, 20)
+statusLabel.Position = UDim2.new(0, 0, 0.80, 0)
+statusLabel.Text = "状态: 正常模式"
+statusLabel.BackgroundTransparency = 1
+statusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 13
+statusLabel.Parent = mainFrame
+
+-- ==================== 悬浮球（移动端优化） ====================
+local floatingButton = Instance.new("TextButton")
+floatingButton.Size = UDim2.new(0, 70, 0, 70)
+floatingButton.Position = UDim2.new(0.85, 0, 0.75, 0)
+floatingButton.Text = "⚡"
+floatingButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+floatingButton.TextColor3 = Color3.fromRGB(255, 200, 0)
+floatingButton.Font = Enum.Font.GothamBold
+floatingButton.TextSize = 30
+floatingButton.BorderSizePixel = 0
+floatingButton.Visible = false
+floatingButton.Active = true
+floatingButton.Draggable = true
+floatingButton.Parent = screenGui
+
+local floatCorner = Instance.new("UICorner")
+floatCorner.CornerRadius = UDim.new(0, 35)
+f
